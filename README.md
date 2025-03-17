@@ -1,27 +1,42 @@
 # Commit 1: Handling Connections
 
-In this milestone, I implemented a simple TCP server that listens to incoming
-requests. Whenever a request comes in, the server prints "Connection Established"
-to the console. This module provides an introduction on how single-threaded web
-servers work: a loop that listens for incoming requests and handles them accordingly.
-While the implementation is far from production-ready, it serves as a solid foundation
-for understanding the basics of concurrency using Rust.
-
-One key insight from this milestone is Rust's approach to error handling The
-use of `.unwrap` is unfamiliar the first time I used it. The method extracts the
-contained value from a `Result`, assuming it is `Ok`, and panics if it is an `Err`.
-For example, in line 17, there is a code like this:
+In this milestone, I implemented a simple TCP server that listens for incoming requests. Whenever a request arrives, the server prints "Connection Established" to the console. In this reflection, I will analyze the code changes and their significance.
 
 ```rust
-        .map(|result| result.unwrap())
+use std::io::{BufRead, BufReader};
+use std::net::{TcpListener, TcpStream};
 ```
 
-The `result` variable is of type `Result<String, Error>`. This means that `result`
-is not directly a String. To access the underlying string value, I need to call
-`.unwrap()`. While this approach is easy, it is not the best practice, as this
-may lead to runtime panics, also known as server crashes.
+This part of the code imports various structs and traits needed to implement the web server. Both lines import modules from Rust's standard library: `std::io` and `std::net`.
 
-Overall, this milestone provided a strong introduction to Rust's concurrency model
-and its unique programming paradigms. While Rust's strict type system and ownership
-model present an initial learning curve, they ultimately contribute to safer and more
-efficient code.
+```rust
+fn main() {
+    let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+
+    for stream in listener.incoming() {
+        let stream = stream.unwrap();
+        handle_connection(stream);
+    }
+}
+```
+
+This is the `main` function, which runs when the program starts. It creates a `TcpListener` bound to port 7878. The unwrap method is used to extract the `TcpListener` instance from the `Result` returned by `TcpListener::bind`. This is acceptable because if binding fails, the program cannot function properly and should terminate.
+
+The second part of the function is a loop that listens for incoming requests. Each request is unwrapped and passed to the `handle_connection` function for processing.
+
+```rust
+fn handle_connection(mut stream: TcpStream) {
+    let buf_reader = BufReader::new(&mut stream);
+    let http_request: Vec<_> = buf_reader
+        .lines()
+        .map(|result| result.unwrap())
+        .take_while(|line| !line.is_empty())
+        .collect();
+
+    println!("{:#?}", http_request);
+}
+```
+
+The `handle_connection` function processes each request by reading and printing it to the console. The `http_request` line reads the incoming HTTP request, collects the headers into a vector, and stops when it encounters an empty line. This effectively extracts the request headers, which are then printed for debugging. The `#?` formatter enables pretty-printed debug output.
+
+Overall, this milestone introduced me to the basics of web servers and how they function. It also reinforced my understanding of Rust’s fundamentals. The Rust compiler is very strict, often flagging even minor issues. While this can make initial development challenging, it helps catch errors early, preventing them from accumulating later. This makes debugging significantly easier in the long run.
