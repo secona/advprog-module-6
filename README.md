@@ -145,3 +145,9 @@ In this milestone, I converted the single-threaded implementation of the web ser
 Each `Worker` is a thin wrapper around `thread::JoinHandle<()>`. The communication between threads is done using `mpsc::channel`. When a request comes in, the main thread sends a `Job` to an available thread by using the `sender` variable from `mpsc::channel`. A `Job` is simply a boxed closure containing the function to be executed, in this case, a call to `handle_connection`. And since `Job` implements `Send`, it is safe to be sent across threads.
 
 Overall, the conversion from single-threaded to multi-threaded significantly improves the server's performance. Previously, it could handle only one request at a time, but now it can process multiple requests concurrently.
+
+# Commit 6: Bonus!
+
+Here, I created a new function, `build`, as a replacement for `new`. The main advantage of `build` is error handling. The `new` function will panic if the size is less than or equal to zero. In contrast, the `build` function will return an `Err` to indicate an error.
+
+This approach of error handling follows Rust's best practices as mentioned in [chapter 9 of the book](https://doc.rust-lang.org/book/ch09-00-error-handling.html). This makes the code more robust and flexible, as callers can decide how to proceed. By adopting this pattern, the function adheres to Rust's philosophy to make errors explicit and predictable, improving security and maintainability.

@@ -24,6 +24,21 @@ impl ThreadPool {
         ThreadPool { workers, sender }
     }
 
+    pub fn build(size: usize) -> Result<ThreadPool, &'static str> {
+        if size == 0 {
+            return Err("Size must be greater than zero!");
+        }
+
+        let (sender, receiver) = mpsc::channel();
+        let receiver = Arc::new(Mutex::new(receiver));
+
+        let workers = (0..size)
+            .map(|id| Worker::new(id, Arc::clone(&receiver)))
+            .collect::<Vec<Worker>>();
+
+        Ok(ThreadPool { workers, sender })
+    }
+
     pub fn execute<F>(&self, f: F)
     where
         F: FnOnce() + Send + 'static,
