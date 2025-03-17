@@ -129,3 +129,9 @@ The original implementation contains a lot of duplication, which can become diff
 ```
 
 The refactored version addresses this issue by eliminating duplication and centralizing the response logic. Instead of writing separate conditional blocks for each endpoint, it uses a match statement to determine the appropriate status line and file name. This approach improves readability, maintainability, and scalability, making it easier to add new endpoints in the future without introducing redundant code.
+
+# Commit 4: Simulation of Slow Requests
+
+Here, we simulate slow requests through the `/sleep` endpoint by using `thread::sleep` where each requests to `/sleep` takes 10 seconds. This replicates real-world scenarios where certain endpoints take longer to process, such as those involving database queries or external API calls. We can then observe how the server handles long-running requests.
+
+The current implementation of the web server is single-threaded. This means that the server can only handle one request at a time. Therefore, when the server is handling a slow endpoint, such as `/sleep`, all other requests are blocked until it completes. This is a problem because a web server should be able to handle multiple requests at once.
