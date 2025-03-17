@@ -40,3 +40,39 @@ fn handle_connection(mut stream: TcpStream) {
 The `handle_connection` function processes each request by reading and printing it to the console. The `http_request` line reads the incoming HTTP request, collects the headers into a vector, and stops when it encounters an empty line. This effectively extracts the request headers, which are then printed for debugging. The `#?` formatter enables pretty-printed debug output.
 
 Overall, this milestone introduced me to the basics of web servers and how they function. It also reinforced my understanding of Rust’s fundamentals. The Rust compiler is very strict, often flagging even minor issues. While this can make initial development challenging, it helps catch errors early, preventing them from accumulating later. This makes debugging significantly easier in the long run.
+
+# Commit 2: Returning HTML
+
+![Commit 2 screen capture](/assets/images/commit2.png)
+
+In milestone 1, the server did not respond to incoming requests, causing the browser to display a "site cannot be reached" error when visiting `localhost:7878`. In this milestone, I implemented the ability to return an HTML response, allowing the web server to function more like a real-world web server that serves files.
+
+```rust
+{
+    let status_line = "HTTP/1.1 200 OK";
+    let contents = fs::read_to_string("hello.html").unwrap();
+    let length = contents.len();
+
+    let response = format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+}
+```
+
+Constructing an HTTP response follows a structured format. It begins with a status line (e.g., `HTTP/1.1 200 OK`), followed by headers, and finally the response body containing the requested content. The response body in this case is an HTML file, `hello.html`, which is read using Rust's `std::fs::read_to_string` function. This method efficiently reads the entire file into a string, making it easy to send as part of the HTTP response.
+
+```rust
+{
+    stream.write_all(response.as_bytes()).unwrap();
+}
+```
+
+After the response is constructed, it gets written to the `stream` variable. This way, when the function has finished executing, the `stream` gets returned from the server to the client with the response we had just constructed.
+
+```rust
+use std::fs;
+use std::io::{BufRead, BufReader, Write};
+use std::net::{TcpListener, TcpStream};
+```
+
+One interesting detail I encountered was the need to explicitly import `std::io::Write` to use the `write_all` method on `stream`. In Rust, `Write` is a trait that provides the ability to write bytes to a stream, and `TcpStream` implements this trait. This highlighted Rust's explicit trait system, where methods from traits are not automatically available unless the corresponding trait is in scope.
+
+Overall, this milestone deepened my understanding of HTTP response structure and Rust's approach to file I/O and stream handling. It also reinforced how Rust's strict module and trait system encourages explicit and readable code. After this milestone get implemented, when I visit `localhost:7878`, the server responds with the correct HTML file.
