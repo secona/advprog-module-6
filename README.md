@@ -135,3 +135,13 @@ The refactored version addresses this issue by eliminating duplication and centr
 Here, we simulate slow requests through the `/sleep` endpoint by using `thread::sleep` where each requests to `/sleep` takes 10 seconds. This replicates real-world scenarios where certain endpoints take longer to process, such as those involving database queries or external API calls. We can then observe how the server handles long-running requests.
 
 The current implementation of the web server is single-threaded. This means that the server can only handle one request at a time. Therefore, when the server is handling a slow endpoint, such as `/sleep`, all other requests are blocked until it completes. This is a problem because a web server should be able to handle multiple requests at once.
+
+# Commit 5: Multithreaded Server
+
+In this milestone, I converted the single-threaded implementation of the web server to a multi-threaded implementation. The approach that I used is `ThreadPool`. A `ThreadPool` is a data structure that manages threads to handle requests. This approach is preferred over creating multiple unbounded threads to handle requests. Without using `ThreadPool`, the system could infinitely create many threads, potentially crashing the server. `ThreadPool` exists to limit the number of threads created.
+
+`ThreadPool` works by storing multiple `Worker`s in a vector. These `Worker`s can then be delegated to incoming requests. That way, when a `Worker` is busy with an endpoint like `/sleep`, another `Worker` can handle other incoming requests, preventing request blockage.
+
+Each `Worker` is a thin wrapper around `thread::JoinHandle<()>`. The communication between threads is done using `mpsc::channel`. When a request comes in, the main thread sends a `Job` to an available thread by using the `sender` variable from `mpsc::channel`. A `Job` is simply a boxed closure containing the function to be executed, in this case, a call to `handle_connection`. And since `Job` implements `Send`, it is safe to be sent across threads.
+
+Overall, the conversion from single-threaded to multi-threaded significantly improves the server's performance. Previously, it could handle only one request at a time, but now it can process multiple requests concurrently.

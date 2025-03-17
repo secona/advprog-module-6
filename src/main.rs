@@ -3,12 +3,15 @@ use std::{fs, thread};
 use std::io::{BufRead, BufReader, Write};
 use std::net::{TcpListener, TcpStream};
 
+use advprog_module_6::ThreadPool;
+
 fn main() {
     let listener = TcpListener::bind("127.0.0.1:7878").unwrap();
+    let pool = ThreadPool::new(4);
 
     for stream in listener.incoming() {
         let stream = stream.unwrap();
-        handle_connection(stream);
+        pool.execute(|| handle_connection(stream));
     }
 }
 
