@@ -76,3 +76,56 @@ use std::net::{TcpListener, TcpStream};
 One interesting detail I encountered was the need to explicitly import `std::io::Write` to use the `write_all` method on `stream`. In Rust, `Write` is a trait that provides the ability to write bytes to a stream, and `TcpStream` implements this trait. This highlighted Rust's explicit trait system, where methods from traits are not automatically available unless the corresponding trait is in scope.
 
 Overall, this milestone deepened my understanding of HTTP response structure and Rust's approach to file I/O and stream handling. It also reinforced how Rust's strict module and trait system encourages explicit and readable code. After this milestone get implemented, when I visit `localhost:7878`, the server responds with the correct HTML file.
+
+# Commit 3: Validating Request and Selectively Responding
+
+![Commit 3 screen capture](/assets/images/commit3.png)
+
+In this milestone, I further implement the web server by adding a feature to handle 404 errors. The logic is to check the endpoint in the request line and handle them accordingly.
+
+```rust
+{
+    if request_line == "GET / HTTP/1.1" {
+        let status_line = "HTTP/1.1 200 OK";
+        let contents = fs::read_to_string("hello.html").unwrap();
+        let length = contents.len();
+
+        let response = format!(
+            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
+        );
+
+        stream.write_all(response.as_bytes()).unwrap();
+    } else {
+        let status_line = "HTTP/1.1 404 NOT FOUND";
+        let contents = fs::read_to_string("404.html").unwrap();
+        let length = contents.len();
+
+        let response = format!(
+            "{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}"
+        );
+
+        stream.write_all(response.as_bytes()).unwrap();
+    }
+}
+```
+
+The original implementation contains a lot of duplication, which can become difficult to manage when adding multiple endpoints. This redundancy increases the risk of inconsistencies, such as forgetting to update all occurrences of a response string template.
+
+```
+{
+    let (status_line, filename) = match &request_line[..] {
+        "GET / HTTP/1.1" => ("HTTP/1.1 200 OK", "hello.html"),
+        _ => ("HTTP/1.1 404 NOT FOUND", "404.html"),
+    };
+
+    let contents = fs::read_to_string(filename).unwrap();
+    let length = contents.len();
+
+    let response =
+        format!("{status_line}\r\nContent-Length: {length}\r\n\r\n{contents}");
+
+    stream.write_all(response.as_bytes()).unwrap();
+}
+```
+
+The refactored version addresses this issue by eliminating duplication and centralizing the response logic. Instead of writing separate conditional blocks for each endpoint, it uses a match statement to determine the appropriate status line and file name. This approach improves readability, maintainability, and scalability, making it easier to add new endpoints in the future without introducing redundant code.
